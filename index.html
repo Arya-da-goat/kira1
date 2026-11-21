@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101113">
+  <meta name="description" content="Browser-only Wikipedia-grounded chat with autonomous Transformer training, BPE tokenization and saved checkpoints.">
+  <meta property="og:title" content="Kira — Local Frontier Transformer">
+  <meta property="og:description" content="Browser-only Wikipedia-grounded chat with autonomous Transformer training, BPE tokenization and saved checkpoints.">
+  <title>Kira — Local Frontier Transformer</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#prompt">Skip to message input</a>
+  <div class="app-shell">
+    <button id="sidebarBackdrop" class="drawer-backdrop" aria-label="Close conversations" title="Close conversations" hidden></button>
+    <aside class="sidebar" id="sidebar" aria-label="Conversations and settings">
+      <div class="sidebar-brand"><span class="brand-mark" aria-hidden="true">K</span><strong>Kira<span class="brand-period">.</span></strong><button id="closeChats" class="icon-button" data-icon="chevron-left" aria-label="Collapse sidebar" title="Collapse sidebar"></button></div>
+      <button id="newChat" class="new-chat" data-icon="plus">New chat<span class="key-hint">Ctrl K</span></button>
+      <label class="search-field"><span data-icon="magnifying-glass" aria-hidden="true"></span><span class="sr-only">Search conversations</span><input id="searchChats" type="search" placeholder="Search conversations" autocomplete="off"></label>
+      <div class="section-label">YOUR CONVERSATIONS</div>
+      <nav id="threadList" class="thread-list" aria-label="Saved conversations"></nav>
+      <div class="sidebar-footer">
+        <button id="inspectModel" class="model-card"><span class="model-card-icon" data-icon="circle-nodes" aria-hidden="true"></span><span><strong>Kira Transformer</strong><small id="sidebarModelValue">Starting browser engine</small></span><span data-icon="chevron-down" aria-hidden="true"></span></button>
+        <div class="sidebar-controls"><button data-open="settingsDialog" data-icon="gear">Settings</button><button id="exportChat" class="icon-button" data-icon="download" title="Export conversation" aria-label="Export conversation"></button><button id="deleteChat" class="icon-button" data-icon="trash" title="Delete conversation" aria-label="Delete conversation"></button></div>
+        <p class="privacy-note" data-icon="server">Your weights. Your workspace.</p>
+      </div>
+    </aside>
+    <main id="mainPanel" class="chat-panel">
+      <header class="topbar">
+        <div class="topbar-title"><button id="openChats" class="icon-button" data-icon="bars" title="Open sidebar" aria-label="Open sidebar" aria-controls="sidebar" aria-expanded="true"></button><span class="title-divider"></span><strong>Kira</strong><span class="topbar-caption">Personal workspace</span></div>
+        <nav class="header-actions" aria-label="Model actions"><span id="statusPill" class="status-pill" data-state="connecting"><span class="status-dot"></span><span id="statusText">Initializing</span></span><button id="openConnection" class="icon-button" data-icon="link" title="Browser engine details" aria-label="Browser engine details"></button><button id="openTraining" class="subtle-button" data-icon="flask">Train</button></nav>
+      </header>
+      <div id="connectionBanner" class="connection-banner" hidden><span data-icon="circle-info" aria-hidden="true"></span><p id="modelStatus" role="status">Starting browser learning engine.</p><button id="retryConnection" data-icon="rotate">Retry</button></div>
+      <div id="errorBanner" class="error-banner" role="alert" hidden><span data-icon="circle-exclamation" aria-hidden="true"></span><p id="errorText"></p><button id="dismissError" class="icon-button" data-icon="xmark" title="Dismiss error" aria-label="Dismiss error"></button></div>
+      <section id="chat" class="chat-window" aria-label="Conversation">
+        <section id="welcome" class="welcome">
+          <div class="welcome-mark" aria-hidden="true">K</div>
+          <p class="eyebrow">A SPACE OF YOUR OWN</p>
+          <h1>Hello, I'm <span>Kira.</span></h1>
+          <p class="welcome-description">Ask Wikipedia-backed questions while a tiny Transformer<br>learns independently in your browser.</p>
+          <div class="starter-grid">
+            <button class="starter" data-prompt="What is photosynthesis?"><span data-icon="message" aria-hidden="true"></span><strong>Science</strong><small>Find a sourced explanation</small><span class="starter-arrow" data-icon="arrow-right" aria-hidden="true"></span></button>
+            <button class="starter" data-prompt="Who was Ada Lovelace?"><span data-icon="pen" aria-hidden="true"></span><strong>History</strong><small>Discover important people</small><span class="starter-arrow" data-icon="arrow-right" aria-hidden="true"></span></button>
+            <button class="starter" data-prompt="Explain black holes"><span data-icon="book-open" aria-hidden="true"></span><strong>Astronomy</strong><small>Explore the universe</small><span class="starter-arrow" data-icon="arrow-right" aria-hidden="true"></span></button>
+          </div>
+          <p class="capability-note">Chat replies show Wikipedia sources. Raw Transformer generation is available in Settings as an experiment.</p>
+        </section>
+        <div id="messages" class="messages"></div>
+        <div id="generating" class="generating" role="status" hidden><span class="avatar">K</span><span class="generation-pulse"></span><span>Preparing your answer</span></div>
+      </section>
+      <div class="composer-container">
+        <div id="editBar" class="edit-bar" hidden><span>Editing an earlier turn. Later messages are replaced only after successful generation.</span><button id="cancelEdit" class="icon-button" data-icon="xmark" title="Cancel editing" aria-label="Cancel editing"></button></div>
+        <div id="attachments" class="attachments" aria-label="Attached model context"></div>
+        <form id="composer" class="composer">
+          <label for="prompt" class="sr-only">Message Kira</label>
+          <textarea id="prompt" rows="2" maxlength="16000" placeholder="Message Kira…" required></textarea>
+          <div class="composer-actions"><div class="composer-tools"><button id="attachFile" type="button" class="icon-button" data-icon="paperclip" title="Attach a text file" aria-label="Attach a text file"></button><input id="fileInput" type="file" accept=".txt,.md,.json,.jsonl,.csv,.py,.js,.log" hidden><button type="button" data-open="memoryDialog" class="icon-button" data-icon="brain" title="Conversation memory" aria-label="Conversation memory"></button><button type="button" data-open="toolsDialog" class="icon-button" data-icon="globe" title="Search Wikipedia" aria-label="Search Wikipedia"></button><button type="button" data-open="settingsDialog" class="icon-button" data-icon="sliders" title="Generation settings" aria-label="Generation settings"></button><span id="contextHint" class="context-hint">Wikipedia-grounded chat</span></div><button id="sendBtn" class="send-button" type="submit" data-icon="arrow-up" title="Send message" aria-label="Send message" disabled></button></div>
+        </form>
+        <div class="composer-footnote"><span id="generationStatus" role="status">Sourced answers come from Wikipedia; neural training stays local.</span><span class="keyboard-hint">Enter to send · Shift Enter for a new line</span></div>
+        <p class="disclaimer">Answers are retrieved from Wikipedia, not generated by the tiny Transformer. Autonomous neural training is real but experimental.</p>
+      </div>
+    </main>
+  </div>
+  <dialog id="settingsDialog" aria-labelledby="settingsTitle">
+    <header><div><p class="eyebrow">MAKE IT YOURS</p><h2 id="settingsTitle">Generation settings</h2></div><button class="icon-button" data-close="settingsDialog" data-icon="xmark" title="Close settings" aria-label="Close settings"></button></header>
+    <p>Wikipedia-grounded chat retrieves sourced articles. Experimental Transformer mode samples raw local weights and may not generate meaningful language.</p>
+    <form id="settingsForm"><label class="field">Answer mode<select id="responseMode"><option value="grounded" selected>Wikipedia-grounded (recommended)</option><option value="experimental">Experimental neural generation (unreliable)</option></select><small>Sampling settings below affect experimental generation only. Background training runs independently.</small></label><div class="settings-grid">
+      <label>Temperature<input id="temperature" type="number" value="0.8" min="0" max="5" step="0.1" required><small>0 for greedy, higher for more variation</small></label>
+      <label>Maximum new tokens<input id="maxTokens" type="number" value="48" min="1" max="512" required><small>Generation also stops at the context limit</small></label>
+      <label>Top-k<input id="topK" type="number" value="40" min="0" max="100000" required><small>0 disables the top-k filter</small></label>
+      <label>Top-p<input id="topP" type="number" value="0.95" min="0.01" max="1" step="0.01" required><small>1 disables nucleus filtering</small></label>
+      <label>Repetition penalty<input id="penalty" type="number" value="1" min="0.1" max="10" step="0.1" required><small>1 leaves repeated tokens unchanged</small></label>
+      <label>Seed<input id="seed" type="number" value="42" min="0" max="9007199254740991" required><small>Same weights and settings reproduce sampling</small></label>
+    </div><label class="toggle-row"><span><strong>Include conversation history</strong><small>Include past messages for follow-up Wikipedia questions or experimental generation.</small></span><input id="useHistory" type="checkbox"></label><button class="primary" type="submit" data-icon="check">Save settings</button></form>
+  </dialog>
+  <dialog id="memoryDialog" aria-labelledby="memoryTitle">
+    <header><h2 id="memoryTitle">Conversation memory</h2><button class="icon-button" data-close="memoryDialog" data-icon="xmark" title="Close memory" aria-label="Close memory"></button></header>
+    <p>Your notes stay in this browser. When enabled, they are supplied only to experimental neural generation. Wikipedia-grounded answers use article sources and do not interpret these notes.</p>
+    <label class="toggle-row"><span><strong>Use memory for this conversation</strong><small>Turn off to keep notes without sending them.</small></span><input id="memoryEnabled" type="checkbox"></label>
+    <label class="field">Your notes<textarea id="memory" rows="6" maxlength="8000" placeholder="Optional context for experimental model generation…"></textarea></label>
+    <button id="clearMemory" data-icon="trash">Clear memory</button>
+  </dialog>
+  <dialog id="toolsDialog" aria-labelledby="toolsTitle">
+    <header><h2 id="toolsTitle">Search tools</h2><button class="icon-button" data-close="toolsDialog" data-icon="xmark" title="Close tools" aria-label="Close tools"></button></header>
+    <p>Manual Wikipedia search adds optional context. Separately, autonomous learning discovers and trains on articles while this page stays open.</p>
+    <form id="searchForm" class="tool-row"><label class="sr-only" for="searchQuery">Wikipedia query</label><input id="searchQuery" maxlength="300" placeholder="Search Wikipedia" required><button id="webSearch" type="submit" data-icon="magnifying-glass">Search</button></form>
+    <div id="searchResults" aria-live="polite"></div>
+  </dialog>
+  <dialog id="connectionDialog" aria-labelledby="connectionTitle">
+    <header><div><p class="eyebrow">ALL ON YOUR DEVICE</p><h2 id="connectionTitle">Browser learning engine</h2></div><button id="closeConnection" class="icon-button" data-icon="xmark" title="Close panel" aria-label="Close panel"></button></header>
+    <p>Zero chat or training backend. The website directly requests public Wikipedia articles through Wikimedia's Action API, stores data and model checkpoints in IndexedDB, and trains a small causal Transformer using local Web Workers.</p>
+    <p><strong>Compute:</strong> Self-contained JavaScript CPU engine. WebGPU acceleration is not yet implemented. The website works on static hosting such as GitHub Pages.</p>
+    <p><strong>Limitations:</strong> This starts with random weights, so early local responses can be nonsense. Broad knowledge takes far more compute than a phone can provide. Training progress and declining loss do not establish general reasoning skill.</p>
+    <p><strong>Background:</strong> The learning loop operates while this page is open and the browser permits execution. Closing the tab stops computation; reopening can resume from IndexedDB. Mobile browsers may suspend background tabs.</p>
+    <p id="connectionStatus" role="status"></p>
+  </dialog>
+  <dialog id="trainingDialog" aria-labelledby="trainingTitle">
+    <header><div><p class="eyebrow">CONTINUOUS AUTONOMOUS TRAINING</p><h2 id="trainingTitle">Kira Training Lab</h2></div><button id="closeTraining" class="icon-button" data-icon="xmark" title="Close panel" aria-label="Close panel"></button></header>
+    <p>Wikipedia discovery, BPE tokenization, experience replay, validation and real gradient updates happen automatically while enabled. You can chat at the same time.</p>
+    <div class="tool-row" id="autonomyControls">
+      <button class="primary" id="autoStart" type="button" data-icon="bolt">Start</button>
+      <button id="autoPause" type="button" data-icon="pause">Pause</button>
+      <button id="autoResume" type="button" data-icon="play">Resume</button>
+      <button id="autoStop" type="button" data-icon="stop">Stop</button>
+    </div>
+    <form id="trainingOptions">
+      <div class="settings-grid">
+        <label>Storage cap (MB)<input type="number" id="autoStorage" min="10" max="500" step="5" value="80" required><small>Pauses new downloads when the cap is reached</small></label>
+        <label>Download interval (ms)<input type="number" id="autoInterval" min="2600" max="20000" step="200" value="3200" required><small>API requests also use retries and backoff</small></label>
+        <label>Training idle time (ms)<input type="number" id="autoThrottle" min="250" max="15000" step="50" value="400" required><small>Lower values use more CPU and battery</small></label>
+        <label>AdamW learning rate<input type="number" id="autoRate" min="0.00001" max="0.005" step="0.00001" value="0.001" required><small>Can be lowered on validation plateaus</small></label>
+      </div><button class="primary" type="submit" data-icon="check">Save limits</button>
+    </form>
+    <p id="trainingError" role="alert"></p>
+    <p id="trainingStatus" role="status">Initializing the local model…</p>
+    <dl id="trainingMetrics" class="facts-grid"></dl>
+    <h3>Measured training and validation loss</h3>
+    <svg id="trainingChart" viewBox="0 0 600 220" role="img" aria-label="Actual training and validation loss"></svg>
+    <p id="trainingLegend"></p>
+    <h3>Live activity feed</h3>
+    <div id="trainingRuns" class="activity-feed" role="log" aria-live="polite" aria-relevant="additions"></div>
+    <p>Downloaded articles, token datasets, tokenizer merges, weights and AdamW moments are stored in this browser. Clearing site data deletes them. On reopen, Kira restores its latest checkpoint and its enabled setting.</p>
+  </dialog>
+  <dialog id="modelDialog" aria-labelledby="modelTitle">
+    <header><h2 id="modelTitle">Model & measurements</h2><button id="closeModel" class="icon-button" data-icon="xmark" title="Close panel" aria-label="Close panel"></button></header>
+    <p>Transformer measurements come from locally stored checkpoints. Wikipedia chat works separately, even without trained weights.</p>
+    <dl id="modelFacts" class="facts-grid"></dl><details><summary>Checkpoint details</summary><pre id="modelDetails"></pre></details>
+    <h3>Recorded training loss</h3><svg id="lossChart" viewBox="0 0 600 220" role="img" aria-label="Measured training and validation loss"></svg>
+    <p id="chartLegend"></p>
+    <p>The browser model is a compact single-block Transformer with 2 causal attention heads. Its CPU computation runs in a Web Worker and should be treated as an educational experiment, not a general-purpose pretrained assistant.</p>
+  </dialog>
+</body>
+</html>
